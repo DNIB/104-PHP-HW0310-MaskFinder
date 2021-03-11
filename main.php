@@ -35,6 +35,18 @@ while(true)
 
     if($s === "n") {
         echo "結束程式\n";
+
+        $msg = unlink("maskdata.csv");
+        
+        if ($msg === true) 
+        {
+            echo "---Message: maskdata.csv Delete Success---";
+        }
+        else 
+        {
+            echo "---Message: maskdata.csv Delete Fail---";
+        }
+
         break;
     }
 }

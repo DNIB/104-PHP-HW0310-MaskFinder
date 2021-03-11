@@ -88,7 +88,6 @@ class MaskInfoClass
         $keyword = readline("請輸入搜尋縣市： ");
         $keyLen = strlen($keyword);
 
-        $counter = 0;
         $searchResult = array();
         foreach($this->data as $info)
         {
@@ -98,7 +97,6 @@ class MaskInfoClass
 
             if ($addrKey === $keyword)
             {
-                $counter += 1;
                 $searchResult[] = array(
                     "醫事機構名稱" => $info['Name'],
                     "醫事機構地址" => $info['Addr'],
@@ -107,6 +105,12 @@ class MaskInfoClass
                 );
             }
         }
+        
+        if (count($searchResult) == 0) {
+            $this->climate->out("搜尋結果為空");
+            return 0;
+        }
+
         $KEY = "成人口罩剩餘數";
         $itemToSort = array_column($searchResult, $KEY);
 
