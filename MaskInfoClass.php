@@ -1,48 +1,89 @@
 <?php
 
+/**
+ * This php file is designed for main.php
+ * php version 7.4.10
+ * 
+ * @category PHP@7.4.10
+ * @package  Climate
+ * @author   DNIB[Tamako] <qazs0205@gamil.com>
+ * @license  DNIB[Tamako] github.com/DNIB
+ * @link     github.com/DNIB/104-PHP-HW0310-MaskFinder
+ */
+
 namespace cyan\data;
 
-require_once('vendor/autoload.php');
+require_once 'vendor/autoload.php';
+
+/**
+ * This Class is used to deal with the data of mask.
+ * 
+ * @category Class
+ * @package  Climate
+ * @author   DNIB[Tamako] <qazs0205@gamil.com>
+ * @license  DNIB[Tamako] github.com/DNIB
+ * @link     github.com/DNIB/104-PHP-HW0310-MaskFinder
+ */
 
 class MaskInfoClass
 {
-    private $data;
-    private $rFile;
-    private $dic;
-    private $climate;
+    private $_data;
+    private $_rFile;
+    private $_climate;
 
-    public function init ()
+    /**
+     * This function is used to initial the class
+     * and execute the others function
+     * 
+     * @return bool
+     */
+    public function init()
     {        
-        $FILENAME = "maskdata.csv";
+        $this->_climate = new \League\CLImate\CLImate;
 
-        $this->climate = new \League\CLImate\CLImate;
+        $isDounloadSuccess = $this->downloadFile();
 
-        $this->downloadFile();
+        if ($isDounloadSuccess) {
+            $isOpenFileSuccess = $this->openFile();
 
-        $this->rFile = fopen($FILENAME, 'r');
-        if($this->rFile == false)
-        {
-            echo "\n\n---File of Mask Infomation Does not Exist.---\n\n";
-            echo "Trying Downloading File...\n";
-
-            $msg = $this->downloadFile();
-            
-            if($msg == false)
-            {
-                echo "\nError: Download Fail\n";
-                echo "Program Exit";
+            if ($isOpenFileSuccess) {
+                $this->readFile();
+                return true;
+            } else { // Open File Failed
                 return false;
             }
-            else
-            {
-                echo "\nDounload Success\n";
-                $this->rFile = fopen($FILENAME, 'r');
-            }
-        } else 
-        {
-            echo "Read File Success.\n";
+        } else { // Download Failed
+            return false;
         }
+    }
 
+    /**
+     * This function is used to open file
+     * 
+     * @return bool
+     */
+    function openFile()
+    {
+        $FILENAME = "maskdata.csv";
+
+        $this->_rFile = fopen($FILENAME, 'r');
+
+        if ($this->_rFile != false) {
+            echo "Open File Successed\n";
+            return true;
+        } else {
+            echo "Error: Read File Failed\n";
+            return false;
+        }
+    }
+
+    /**
+     * This function is used to read file
+     * 
+     * @return bool
+     */
+    function readFile()
+    {
         $dic = array(
             'Code',
             'Name',
@@ -53,50 +94,62 @@ class MaskInfoClass
             'Time'
         );
         
-        $this->data = array();
-        while (($dataOfLine = fgetcsv($this->rFile, 1000)) != false)
-        {
-            $info = array();
-            for($i=0; $i<7; $i++)
-            {
-                $info[$dic[$i]] = $dataOfLine[$i];
+        $isFirstDisard = false;
+        $this->_data = array();
+
+        while (($dataOfLine = fgetcsv($this->_rFile, 1000)) != false) {
+            if ($isFirstDisard === false) {
+                $info = array();
+                for ($i=0; $i<7; $i++) {
+                    $info[$dic[$i]] = $dataOfLine[$i];
+                }
+                $this->_data[] = $info;
+            } else {
+                continue;
             }
-            //print_r($info);
-            $this->data[] = $info;
         }
-        //print_r($this->data);
+
+        return true;
     }
 
+    /**
+     * This function is used to download file from Internet
+     * 
+     * @return bool
+     */
     public function downloadFile()
     {
-        $URL = 'https://data.nhi.gov.tw/Datasets/Download.ashx?rid=A21030000I-D50001-001&l=https://data.nhi.gov.tw/resource/mask/maskdata.csv'; 
+        $URL = 'https://data.nhi.gov.tw/resource/mask/maskdata.csv';
 
         $file_name = basename($URL); 
         
-        if(file_put_contents( $file_name,file_get_contents($URL))) { 
+        if (file_put_contents($file_name, file_get_contents($URL))) { 
             echo "File downloaded successfully\n"; 
             return true;
-        } 
-        else { 
+        } else { 
             echo "File downloading failed.\n"; 
             return false;
         } 
     }
 
+    /**
+     * This function is used to allow user input string
+     * and search the string from the address of read-data
+     * 
+     * @return bool
+     */
     public function search()
     {
         $keyword = readline("請輸入搜尋縣市： ");
         $keyLen = strlen($keyword);
 
         $searchResult = array();
-        foreach($this->data as $info)
-        {
+        foreach ($this->_data as $info) {
             $addr = $info['Addr'];
             $addrKey = substr($addr, 0, $keyLen);
             $outputString = "";
 
-            if ($addrKey === $keyword)
-            {
+            if ($addrKey === $keyword) {
                 $searchResult[] = array(
                     "醫事機構名稱" => $info['Name'],
                     "醫事機構地址" => $info['Addr'],
@@ -105,9 +158,22 @@ class MaskInfoClass
                 );
             }
         }
-        
+        $this->printResult($searchResult);
+
+        return true;
+    }
+
+    /**
+     * This function is used to print the result of searching
+     * 
+     * @param array $searchResult The Result of searching stored in array
+     * 
+     * @return bool
+     */
+    public function printResult($searchResult)
+    {
         if (count($searchResult) == 0) {
-            $this->climate->out("搜尋結果為空");
+            $this->_climate->out("搜尋結果為空");
             return 0;
         }
 
@@ -116,8 +182,8 @@ class MaskInfoClass
 
         array_multisort($itemToSort, SORT_DESC, $searchResult);
 
-        $this->climate->table($searchResult);
+        $this->_climate->table($searchResult);
 
-        return 0;
+        return true;
     }
 }
